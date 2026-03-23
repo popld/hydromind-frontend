@@ -1,0 +1,9 @@
+node_modules
+.umijs
+.umi
+.dist
+.dist-production
+dist
+.dev.*.log
+src/.umi
+src/.umi-production

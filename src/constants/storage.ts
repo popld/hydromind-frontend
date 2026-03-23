@@ -1,0 +1,1 @@
+﻿export const TOKEN_STORAGE_KEY = 'HF_ADMIN_TOKEN';
