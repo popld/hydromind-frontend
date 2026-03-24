@@ -2,7 +2,7 @@
 import { Button, Card, Form, Input, Typography, message } from 'antd';
 import { login, getCurrentUser } from '@/services/api/auth';
 import { useAuthStore } from '@/stores/auth.store';
-import type { LoginPayload } from '@/types/app';
+import type { InitialState, LoginPayload } from '@/types/app';
 
 export default function LoginPage() {
   const { setInitialState } = useModel('@@initialState');
@@ -11,7 +11,7 @@ export default function LoginPage() {
     const result = await login(values);
     useAuthStore.getState().setToken(result.accessToken);
     const currentUser = await getCurrentUser();
-    await setInitialState((state) => ({ ...(state ?? {}), currentUser }));
+    await setInitialState((state: InitialState | undefined) => ({ ...(state ?? {}), currentUser }));
     message.success('登录成功');
     history.push('/dashboard');
   };

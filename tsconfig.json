@@ -15,10 +15,12 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@@": ["src/.umi/exports"],
+      "@@/*": ["src/.umi/*"]
     },
     "types": ["node"]
   },
-  "include": ["src", "config", "mock", ".umirc.ts"],
+  "include": ["src", "src/.umi/**/*", "config", "mock", ".umirc.ts"],
   "exclude": ["node_modules", "dist", ".umi"]
 }

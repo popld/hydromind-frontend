@@ -1,0 +1,363 @@
+.viewport {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+  flex: 1;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.list,
+.viewport :global(.ant-spin-nested-loading),
+.viewport :global(.ant-spin-container),
+.viewport :global(.ant-list-items) {
+  width: 100%;
+}
+
+.listPageStreaming {
+  padding-bottom: 120px;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: 32px 24px;
+}
+
+.emptyPage {
+  text-align: center;
+}
+
+.emptyFloating {
+  min-height: 240px;
+}
+
+.item {
+  width: 100%;
+  border: none !important;
+  padding-block: 12px !important;
+}
+
+.assistantShell,
+.userMessageBlock {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.assistantShell {
+  gap: 12px;
+}
+
+.assistantShellPage {
+  width: 100%;
+  max-width: 100%;
+  padding-right: 10%;
+}
+
+.assistantShellFloating {
+  width: min(100%, 780px);
+}
+
+.assistantHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.assistantHeaderPage {
+  gap: 8px;
+  min-height: 20px;
+  margin-bottom: -2px;
+}
+
+.assistantHeaderFloating {
+  gap: 10px;
+}
+
+.assistantBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.assistantName {
+  color: #1f2a3d;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.assistantStatus {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding-inline: 10px;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #5774b8;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.assistantAnswer {
+  min-width: 0;
+}
+
+.assistantAnswerPage {
+  max-width: min(100%, 860px);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.assistantAnswerStreamingPage {
+  min-height: 120px;
+}
+
+.assistantAnswerFloating {
+  max-width: min(100%, 820px);
+  padding: 14px 16px;
+  border: 1px solid #eaf0fb;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+  max-width: 100%;
+}
+
+.searchingBlock {
+  padding: 4px 0 6px;
+}
+
+.searchingText {
+  margin-top: 10px;
+  color: #7b879b;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.searchingLines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.searchingLine {
+  display: block;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f4f6fa 0%, #eceff5 50%, #f4f6fa 100%);
+  background-size: 200% 100%;
+  animation: assistantStreamingWave 1.35s linear infinite;
+}
+
+.searchingLineLong {
+  width: 82%;
+}
+
+.searchingLineMid {
+  width: 68%;
+}
+
+.searchingLineShort {
+  width: 46%;
+}
+
+.bubble {
+  position: relative;
+  max-width: min(78%, 720px);
+  padding: 9px 14px;
+  border-radius: 18px;
+}
+
+.userBubblePage,
+.userBubbleFloating {
+  min-height: 38px;
+  background: #1677ff;
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(22, 119, 255, 0.16);
+  border-radius: 18px 18px 8px 18px;
+}
+
+.userBubbleFloating {
+  width: max-content;
+  max-width: min(72%, 220px);
+  margin-left: auto;
+}
+
+.userText {
+  display: block;
+  color: #ffffff !important;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.userMessageBlock {
+  align-items: flex-end;
+}
+
+.userMessageBlockPage {
+  width: 100%;
+}
+
+.userMessageBlockFloating {
+  width: 100%;
+}
+
+.userActions {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  padding-inline: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.userActionButton {
+  width: 28px;
+  min-width: 28px !important;
+  height: 28px;
+  color: #8a94a6 !important;
+  border-radius: 999px !important;
+}
+
+.userActionButton:hover {
+  color: #4b5668 !important;
+  background: #f3f5f8 !important;
+}
+
+.item:hover .userActions,
+.item:focus-within .userActions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.referenceSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  max-width: min(100%, 860px);
+  padding: 10px 12px;
+  border: 1px solid #edf1f7;
+  border-radius: 14px;
+  background: #fbfcff;
+}
+
+.referenceSectionTitle {
+  color: #6f7d96;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.references {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+.referenceItem,
+.referenceCard {
+  width: 100%;
+  padding: 9px 2px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #33425c;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.referenceItem {
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.referenceItem:hover,
+.referenceCard:hover {
+  background: rgba(47, 88, 255, 0.03);
+}
+
+.referenceItem:hover .referenceTitle,
+.referenceCard:hover .referenceTitle {
+  color: #2f58ff;
+}
+
+.referenceHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.referenceIndex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 18px;
+  padding-inline: 5px;
+  border-radius: 999px;
+  background: #edf4ff;
+  color: #2f58ff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.referenceTitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: #32425c;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.referenceType {
+  margin-left: auto;
+  color: #7c8aa3;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.referenceItem + .referenceItem,
+.referenceCard + .referenceCard,
+.referenceCard + .referenceItem,
+.referenceItem + .referenceCard {
+  border-top: 1px solid #edf1f7;
+}
+
+@keyframes assistantStreamingWave {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}

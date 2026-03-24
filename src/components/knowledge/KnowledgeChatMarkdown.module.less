@@ -1,0 +1,223 @@
+.markdown {
+  color: inherit;
+  font-size: 15px;
+  line-height: 1.85;
+  word-break: break-word;
+}
+
+.markdownStreaming {
+  min-height: 72px;
+}
+
+.streamingPlaceholder {
+  min-width: 240px;
+  padding-top: 6px;
+}
+
+.streamingLines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.streamingLine {
+  display: block;
+  height: 11px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(126, 153, 255, 0.1) 0%, rgba(126, 153, 255, 0.26) 50%, rgba(126, 153, 255, 0.1) 100%);
+  background-size: 200% 100%;
+  animation: streamingWave 1.2s linear infinite;
+}
+
+.streamingLineLong {
+  width: 88%;
+}
+
+.streamingLineShort {
+  width: 58%;
+}
+
+.markdown :global(p) {
+  margin: 0;
+}
+
+.markdown :global(p + p) {
+  margin-top: 12px;
+}
+
+.markdown :global(ul),
+.markdown :global(ol) {
+  margin: 10px 0 0;
+  padding-left: 20px;
+}
+
+.markdown :global(li + li) {
+  margin-top: 6px;
+}
+
+.markdown :global(blockquote) {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-left: 3px solid #8fb1ff;
+  border-radius: 0 14px 14px 0;
+  background: #f3f7ff;
+  color: #53627a;
+}
+
+.markdown :global(h1),
+.markdown :global(h2),
+.markdown :global(h3),
+.markdown :global(h4) {
+  margin: 18px 0 0;
+  color: #25324a;
+  line-height: 1.4;
+}
+
+.markdown :global(h1:first-child),
+.markdown :global(h2:first-child),
+.markdown :global(h3:first-child),
+.markdown :global(h4:first-child),
+.markdown :global(p:first-child) {
+  margin-top: 0;
+}
+
+.markdown :global(table) {
+  width: 100%;
+  margin-top: 14px;
+  border-collapse: collapse;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid #e5ecf8;
+  background: #ffffff;
+}
+
+.markdown :global(th),
+.markdown :global(td) {
+  padding: 10px 12px;
+  border-bottom: 1px solid #edf2fb;
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown :global(th) {
+  background: #f7faff;
+  color: #445166;
+  font-weight: 600;
+}
+
+.link {
+  color: #2f58ff;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.inlineCode {
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: rgba(47, 88, 255, 0.08);
+  color: #2142b3;
+  font-size: 13px;
+  font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.codeBlock {
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid #dde7fb;
+  border-radius: 16px;
+  background: #f5f9ff;
+}
+
+.codeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e4edff;
+  background: linear-gradient(180deg, #f9fbff 0%, #eff5ff 100%);
+}
+
+.codeLanguage {
+  color: #5d6d88;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.codeSummary {
+  color: #8091aa;
+  font-size: 12px;
+}
+
+.codeActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.codeButton {
+  color: #52637f !important;
+}
+
+.codePre {
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+}
+
+.codeCollapsed {
+  max-height: 280px;
+  overflow: hidden;
+  mask-image: linear-gradient(180deg, #000000 0%, #000000 78%, transparent 100%);
+}
+
+.codeInner {
+  display: table;
+  min-width: 100%;
+  padding: 12px 0;
+  color: #25324a;
+  font-size: 13px;
+  line-height: 1.7;
+  font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.codeLine {
+  display: table-row;
+}
+
+.codeLineNumber,
+.codeLineContent {
+  display: table-cell;
+  vertical-align: top;
+}
+
+.codeLineNumber {
+  width: 1%;
+  min-width: 42px;
+  padding: 0 12px 0 16px;
+  color: #97a5bc;
+  text-align: right;
+  user-select: none;
+}
+
+.codeLineContent {
+  width: 99%;
+  padding-right: 16px;
+  white-space: pre;
+}
+
+@keyframes streamingWave {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}

@@ -1,146 +1,214 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react';
-import { history, useAccess, useLocation } from '@umijs/max';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useAccess, useLocation } from '@umijs/max';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button, Empty, Input, List, Modal, Select, Space, Tag, Typography, message } from 'antd';
-import { EditOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons';
-import { ModalForm, PageContainer, ProCard, ProFormText } from '@ant-design/pro-components';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import {
+  Alert,
+  Button,
+  Dropdown,
+  List,
+  Modal,
+  Select,
+  Space,
+  Tag,
+  Typography,
+  message,
+} from 'antd';
+import type { InputRef, MenuProps } from 'antd';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  MoreOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
+import { ModalForm, PageContainer, ProFormText } from '@ant-design/pro-components';
 import PermissionButton from '@/components/common/PermissionButton';
-import { askKnowledge, askKnowledgeStream, createConversation, renameConversation } from '@/services/api/knowledge';
-import { useConversationMessages, useKnowledgeBases, useKnowledgeConversations } from '@/queries/knowledge.query';
+import KnowledgeChatComposer from '@/components/knowledge/KnowledgeChatComposer';
+import KnowledgeChatMessageList from '@/components/knowledge/KnowledgeChatMessageList';
+import KnowledgeReferencePreviewModal from '@/components/knowledge/KnowledgeReferencePreviewModal';
+import { useKnowledgeQaChat } from '@/hooks/useKnowledgeQaChat';
+import {
+  useConversationMessages,
+  useKnowledgeBases,
+  useKnowledgeConversations,
+} from '@/queries/knowledge.query';
 import { queryKeys } from '@/queries/keys';
-import type { ConversationMessage, KnowledgeReference } from '@/types/knowledge';
+import { deleteConversation, renameConversation } from '@/services/api/knowledge';
+import type { ConversationMessage, ConversationSummary, KnowledgeReference } from '@/types/knowledge';
+import { readKnowledgeChatSession, writeKnowledgeChatSession } from '@/utils/knowledgeChatSession';
+import styles from './index.module.less';
 
-const STREAMING_ENABLED = String(process.env.UMI_APP_ENABLE_STREAMING).toLowerCase() !== 'false';
+const PAGE_SESSION_KEY = 'HF_KNOWLEDGE_QA_PAGE_SESSION';
+
+const REFERENCE_TYPE_LABELS: Record<KnowledgeReference['sourceType'], string> = {
+  document: '文档',
+  knowledge_base: '知识库',
+};
 
 export default function KnowledgeQaPage() {
   const access = useAccess() as any;
   const location = useLocation();
-  const [question, setQuestion] = useState(new URLSearchParams(location.search).get('keyword') || '');
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [activeConversationId, setActiveConversationId] = useState<string | undefined>();
-  const [selectedBaseIds, setSelectedBaseIds] = useState<string[]>([]);
-  const [pendingUserMessage, setPendingUserMessage] = useState<ConversationMessage | undefined>();
-  const [streamingMessage, setStreamingMessage] = useState<ConversationMessage | undefined>();
+  const queryClient = useQueryClient();
+  const restoredSessionRef = useRef(readKnowledgeChatSession(PAGE_SESSION_KEY));
+  const initialParamsRef = useRef(new URLSearchParams(location.search));
+  const inputRef = useRef<InputRef | null>(null);
+  const restoreToastShownRef = useRef(false);
+  const submitFromDraftRef = useRef(false);
+  const initialParams = initialParamsRef.current;
+  const restoredConversationId = restoredSessionRef.current?.conversationId;
+  const restoredBaseIds = restoredSessionRef.current?.selectedBaseIds ?? [];
+  const initialKeyword = initialParams.get('keyword') || restoredSessionRef.current?.draftQuestion || '';
+  const initialConversationId = initialParams.get('conversationId') || restoredConversationId || undefined;
+
+  const [question, setQuestion] = useState(initialKeyword);
+  const [activeConversationId, setActiveConversationId] = useState<string | undefined>(
+    initialConversationId,
+  );
+  const [selectedBaseIds, setSelectedBaseIds] = useState<string[]>(
+    initialParams.get('baseId') ? [initialParams.get('baseId') as string] : restoredBaseIds,
+  );
+  const [isDraftConversation, setIsDraftConversation] = useState(
+    Boolean(!initialParams.get('conversationId') && !restoredConversationId && initialKeyword),
+  );
+  const [hiddenConversationId, setHiddenConversationId] = useState<string | undefined>();
   const [renameOpen, setRenameOpen] = useState(false);
+  const [renameTargetId, setRenameTargetId] = useState<string | undefined>(initialConversationId);
   const [referenceOpen, setReferenceOpen] = useState(false);
   const [activeReference, setActiveReference] = useState<KnowledgeReference | undefined>();
-  const queryClient = useQueryClient();
-  const messageEndRef = useRef<HTMLDivElement | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const [editingMessageState, setEditingMessageState] = useState<{
+    messageId: string;
+    restoreQuestion: string;
+  }>();
+  const [restoredFromSession] = useState(
+    Boolean(
+      !initialParams.get('conversationId') &&
+        !initialParams.get('keyword') &&
+        (restoredSessionRef.current?.conversationId ||
+          restoredSessionRef.current?.draftQuestion ||
+          restoredBaseIds.length),
+    ),
+  );
+
   const { data: conversations = [], isLoading: conversationsLoading } = useKnowledgeConversations();
-  const { data: messageList = [], isLoading: messagesLoading } = useConversationMessages(activeConversationId);
+  const { data: messageList = [] } = useConversationMessages(activeConversationId);
   const { data: basePage } = useKnowledgeBases();
+
+  const visibleConversations = useMemo(
+    () => conversations.filter((item) => item.id !== hiddenConversationId),
+    [conversations, hiddenConversationId],
+  );
+
   const currentConversation = conversations.find((item) => item.id === activeConversationId);
+  const renameTargetConversation = conversations.find((item) => item.id === renameTargetId);
+  const stopIcon = (
+    <span className={styles.stopGlyph} aria-hidden="true">
+      <span className={styles.stopGlyphInner} />
+    </span>
+  );
+
+  const {
+    isStreaming,
+    mergedMessages,
+    lastAssistantMessage,
+    errorMessage,
+    runAsk,
+    retryLastQuestion,
+    stopStreaming,
+  } = useKnowledgeQaChat({
+    activeConversationId,
+    selectedBaseIds,
+    messageList,
+    onConversationChange: (conversationId) => {
+      setActiveConversationId(conversationId);
+      setRenameTargetId(conversationId);
+
+      if (submitFromDraftRef.current) {
+        setHiddenConversationId(conversationId);
+      }
+    },
+    onConversationPersisted: (conversationId) => {
+      setActiveConversationId(conversationId);
+      setRenameTargetId(conversationId);
+      setIsDraftConversation(false);
+      setHiddenConversationId((current) => (current === conversationId ? undefined : current));
+      submitFromDraftRef.current = false;
+    },
+  });
 
   useEffect(() => {
-    if (!activeConversationId && conversations.length > 0) {
-      setActiveConversationId(conversations[0].id);
+    const conversationId = new URLSearchParams(location.search).get('conversationId');
+    if (conversationId) {
+      setActiveConversationId(conversationId);
+      setRenameTargetId(conversationId);
+      setIsDraftConversation(false);
+      setHiddenConversationId(undefined);
+      setEditingMessageState(undefined);
     }
-  }, [activeConversationId, conversations]);
+  }, [location.search]);
 
   useEffect(() => {
-    const initialBaseId = new URLSearchParams(location.search).get('baseId');
-    if (selectedBaseIds.length === 0 && basePage?.list.length) {
-      setSelectedBaseIds(initialBaseId ? [initialBaseId] : [basePage.list[0].id]);
+    if (!activeConversationId && visibleConversations.length > 0 && !isDraftConversation) {
+      const nextConversationId = visibleConversations[0].id;
+      setActiveConversationId(nextConversationId);
+      setRenameTargetId(nextConversationId);
     }
-  }, [basePage?.list, location.search, selectedBaseIds.length]);
+  }, [activeConversationId, isDraftConversation, visibleConversations]);
+
+  useEffect(() => {
+    if (!basePage?.list.length) {
+      return;
+    }
+
+    const availableBaseIds = new Set(basePage.list.map((item) => item.id));
+
+    setSelectedBaseIds((current) => {
+      const nextSelectedBaseIds = current.filter((id) => availableBaseIds.has(id));
+      if (nextSelectedBaseIds.length > 0) {
+        return nextSelectedBaseIds;
+      }
+
+      const queryBaseId = new URLSearchParams(location.search).get('baseId');
+      if (queryBaseId && availableBaseIds.has(queryBaseId)) {
+        return [queryBaseId];
+      }
+
+      return [basePage.list[0].id];
+    });
+  }, [basePage?.list, location.search]);
 
   useEffect(() => {
     const keyword = new URLSearchParams(location.search).get('keyword') || '';
     if (keyword) {
       setQuestion(keyword);
+      setActiveConversationId(undefined);
+      setRenameTargetId(undefined);
+      setIsDraftConversation(true);
+      setHiddenConversationId(undefined);
+      setEditingMessageState(undefined);
     }
   }, [location.search]);
 
   useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [messageList, pendingUserMessage, streamingMessage]);
+    writeKnowledgeChatSession(PAGE_SESSION_KEY, {
+      conversationId: isDraftConversation ? undefined : activeConversationId,
+      selectedBaseIds,
+      draftQuestion: question,
+    });
+  }, [activeConversationId, isDraftConversation, selectedBaseIds, question]);
 
-  const mergedMessages = useMemo(() => {
-    const items = [...messageList];
-    if (pendingUserMessage) items.push(pendingUserMessage);
-    if (streamingMessage) items.push(streamingMessage);
-    return items;
-  }, [messageList, pendingUserMessage, streamingMessage]);
-
-  const lastAssistantMessage = useMemo(() => [...mergedMessages].reverse().find((item) => item.role === 'assistant'), [mergedMessages]);
-  const lastUserMessage = useMemo(() => [...messageList].reverse().find((item) => item.role === 'user'), [messageList]);
-
-  const stopStreaming = () => {
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = null;
-    setIsStreaming(false);
-    setPendingUserMessage(undefined);
-    setStreamingMessage(undefined);
-    message.info('已停止生成');
-  };
-
-  const runAsk = async (rawQuestion: string) => {
-    const content = rawQuestion.trim();
-    if (!content || isStreaming) return;
-
-    try {
-      setIsStreaming(true);
-      let conversationId = activeConversationId;
-      if (!conversationId) {
-        const conversation = await createConversation(content.slice(0, 12));
-        conversationId = conversation.id;
-        setActiveConversationId(conversationId);
-      }
-
-      const now = new Date().toISOString().slice(0, 16).replace('T', ' ');
-      setPendingUserMessage({ id: `temp-user-${Date.now()}`, role: 'user', content, createdAt: now });
-      setStreamingMessage({ id: `temp-assistant-${Date.now() + 1}`, role: 'assistant', content: '', createdAt: now, references: [] });
-      setQuestion('');
-
-      if (STREAMING_ENABLED) {
-        const controller = new AbortController();
-        abortControllerRef.current = controller;
-        let refs: KnowledgeReference[] = [];
-        await askKnowledgeStream(
-          { conversationId, question: content, baseIds: selectedBaseIds },
-          {
-            signal: controller.signal,
-            onEvent: (event) => {
-              if (event.type === 'delta') {
-                setStreamingMessage((prev) => prev ? { ...prev, content: `${prev.content}${event.content}` } : prev);
-              }
-              if (event.type === 'references') {
-                refs = event.references;
-                setStreamingMessage((prev) => prev ? { ...prev, references: event.references } : prev);
-              }
-              if (event.type === 'done') {
-                setStreamingMessage((prev) => prev ? { ...prev, references: refs } : prev);
-              }
-            },
-          },
-        );
-      } else {
-        const answer = await askKnowledge({ conversationId, question: content, baseIds: selectedBaseIds });
-        setStreamingMessage((prev) => prev ? { ...prev, content: answer.content, references: answer.references } : prev);
-      }
-
-      abortControllerRef.current = null;
-      setPendingUserMessage(undefined);
-      setStreamingMessage(undefined);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.knowledge.conversations }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.knowledge.messages(conversationId) }),
-      ]);
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        return;
-      }
-      message.error(error instanceof Error ? error.message : '提问失败');
-    } finally {
-      setIsStreaming(false);
+  useEffect(() => {
+    if (!restoredFromSession || restoreToastShownRef.current) {
+      return;
     }
-  };
+
+    restoreToastShownRef.current = true;
+    message.success({
+      content: '已恢复上次未完成内容',
+      duration: 2.5,
+    });
+  }, [restoredFromSession]);
 
   const renameMutation = useMutation({
-    mutationFn: async (title: string) => renameConversation(activeConversationId as string, title),
+    mutationFn: async (title: string) => renameConversation(renameTargetId as string, title),
     onSuccess: async () => {
       message.success('会话名称已更新');
       setRenameOpen(false);
@@ -148,71 +216,360 @@ export default function KnowledgeQaPage() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteConversation,
+    onSuccess: async (_, conversationId) => {
+      const remainingConversations = visibleConversations.filter((item) => item.id !== conversationId);
+
+      if (conversationId === activeConversationId) {
+        if (remainingConversations.length > 0) {
+          const nextConversationId = remainingConversations[0].id;
+          setActiveConversationId(nextConversationId);
+          setRenameTargetId(nextConversationId);
+          setIsDraftConversation(false);
+        } else {
+          setActiveConversationId(undefined);
+          setRenameTargetId(undefined);
+          setIsDraftConversation(true);
+          setQuestion('');
+        }
+      }
+
+      setEditingMessageState(undefined);
+      message.success('会话已删除');
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.knowledge.conversations }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.knowledge.messages(conversationId) }),
+      ]);
+    },
+  });
+
+  const focusInput = () => {
+    window.setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
+  };
+
+  const handleCreateConversation = () => {
+    const isAlreadyLatest = isDraftConversation && mergedMessages.length === 0 && !question.trim();
+    if (isAlreadyLatest) {
+      message.info('已是最新会话');
+      focusInput();
+      return;
+    }
+
+    submitFromDraftRef.current = false;
+    setActiveConversationId(undefined);
+    setRenameTargetId(undefined);
+    setIsDraftConversation(true);
+    setHiddenConversationId(undefined);
+    setEditingMessageState(undefined);
+    setQuestion('');
+    setReferenceOpen(false);
+    setActiveReference(undefined);
+    focusInput();
+  };
+
+  const handleSelectConversation = (conversationId: string) => {
+    submitFromDraftRef.current = false;
+    setActiveConversationId(conversationId);
+    setRenameTargetId(conversationId);
+    setIsDraftConversation(false);
+    setHiddenConversationId(undefined);
+    setEditingMessageState(undefined);
+  };
+
+  const handleSubmitQuestion = async () => {
+    submitFromDraftRef.current = !activeConversationId || isDraftConversation;
+    const sent = await runAsk(question);
+
+    if (sent) {
+      setEditingMessageState(undefined);
+      setQuestion('');
+      setIsDraftConversation(false);
+      return;
+    }
+
+    submitFromDraftRef.current = false;
+  };
+
+  const handleEditMessage = (messageItem: ConversationMessage) => {
+    setEditingMessageState({
+      messageId: messageItem.id,
+      restoreQuestion: question,
+    });
+    setQuestion(messageItem.content);
+    focusInput();
+  };
+
+  const handleCancelEdit = () => {
+    setQuestion(editingMessageState?.restoreQuestion ?? '');
+    setEditingMessageState(undefined);
+    focusInput();
+  };
+
+  const handleDeleteConversation = (conversationId: string) => {
+    Modal.confirm({
+      title: '确认删除该会话？',
+      content: '删除后将无法恢复当前问答记录。',
+      okText: '删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: async () => {
+        await deleteMutation.mutateAsync(conversationId);
+      },
+    });
+  };
+
+  const buildConversationMenu = (item: ConversationSummary): MenuProps => ({
+    items: [
+      {
+        key: 'rename',
+        icon: <EditOutlined />,
+        label: '重命名',
+      },
+      {
+        key: 'delete',
+        icon: <DeleteOutlined />,
+        label: '删除',
+        danger: true,
+      },
+    ],
+    onClick: ({ key, domEvent }) => {
+      domEvent.stopPropagation();
+
+      if (key === 'rename') {
+        setRenameTargetId(item.id);
+        setRenameOpen(true);
+      }
+
+      if (key === 'delete') {
+        handleDeleteConversation(item.id);
+      }
+    },
+  });
+
   return (
-    <PageContainer title="知识问答" subTitle="已补齐停止生成、重新生成、引用跳转和会话重命名。">
-      <ProCard split="vertical">
-        <ProCard colSpan="24%" title="会话列表" loading={conversationsLoading} extra={<Tag color="blue">{STREAMING_ENABLED ? 'Streaming Mock' : 'Mock'}</Tag>}>
-          <PermissionButton
-            permission="knowledge:qa:use"
-            type="primary"
-            block
-            style={{ marginBottom: 12 }}
-            onClick={async () => {
-              const conversation = await createConversation('新建会话');
-              setActiveConversationId(conversation.id);
-              await queryClient.invalidateQueries({ queryKey: queryKeys.knowledge.conversations });
-            }}
-          >
-            新建会话
-          </PermissionButton>
-          <List
-            dataSource={conversations}
-            renderItem={(item) => (
-              <List.Item
-                actions={
-                  access.hasPermission('knowledge:conversation:update')
-                    ? [<Button key="rename" type="text" icon={<EditOutlined />} onClick={(event) => { event.stopPropagation(); setActiveConversationId(item.id); setRenameOpen(true); }} />]
-                    : []
-                }
-                style={{ cursor: 'pointer', borderRadius: 8, paddingInline: 12, background: item.id === activeConversationId ? '#e6f4ff' : 'transparent' }}
-                onClick={() => setActiveConversationId(item.id)}
-              >
-                <List.Item.Meta title={item.title} description={item.updatedAt} />
-              </List.Item>
+    <PageContainer
+      className={styles.page}
+      title="项目执行知识问答"
+      subTitle="面向任务、审批、材料等项目执行信息查询"
+    >
+      <div className={styles.board}>
+        <section className={`${styles.panel} ${styles.sessionPanel}`}>
+          <div className={styles.panelHeader}>
+            <span className={styles.panelTitle}>会话列表</span>
+          </div>
+          <div className={styles.panelBody}>
+            <PermissionButton
+              permission="knowledge:qa:use"
+              type="primary"
+              block
+              icon={<PlusOutlined />}
+              className={styles.leftAction}
+              onClick={handleCreateConversation}
+            >
+              新建会话
+            </PermissionButton>
+            <div className={styles.panelScroll}>
+              <List
+                loading={conversationsLoading}
+                dataSource={visibleConversations}
+                renderItem={(item) => {
+                  const isActive = item.id === activeConversationId;
+                  const canOperate = access.hasPermission('knowledge:conversation:update');
+
+                  return (
+                    <List.Item
+                      className={`${styles.conversationItem} ${
+                        isActive ? styles.conversationItemActive : ''
+                      }`}
+                      onClick={() => handleSelectConversation(item.id)}
+                      actions={
+                        canOperate
+                          ? [
+                              <Dropdown
+                                key="more"
+                                trigger={['click']}
+                                menu={buildConversationMenu(item)}
+                              >
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  icon={<MoreOutlined />}
+                                  className={styles.conversationAction}
+                                  onClick={(event) => event.stopPropagation()}
+                                />
+                              </Dropdown>,
+                            ]
+                          : []
+                      }
+                    >
+                      <div className={styles.conversationMeta}>
+                        <span className={styles.conversationTitle}>{item.title}</span>
+                        <span className={styles.conversationTime}>{item.updatedAt}</span>
+                      </div>
+                    </List.Item>
+                  );
+                }}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className={`${styles.panel} ${styles.chatPanel}`}>
+          <div className={styles.panelHeader}>
+            <span className={styles.panelTitle}>对话区</span>
+          </div>
+          <div className={styles.panelBody}>
+            <div className={styles.chatBody}>
+              <Select
+                mode="multiple"
+                style={{ width: '100%' }}
+                value={selectedBaseIds}
+                placeholder="选择知识范围"
+                options={(basePage?.list ?? []).map((item) => ({ label: item.name, value: item.id }))}
+                onChange={setSelectedBaseIds}
+              />
+              {errorMessage ? (
+                <Alert
+                  type="error"
+                  showIcon
+                  message={errorMessage}
+                  action={
+                    <Button size="small" type="link" onClick={() => retryLastQuestion()}>
+                      重新提问
+                    </Button>
+                  }
+                />
+              ) : null}
+              <div className={styles.chatViewport}>
+                <KnowledgeChatMessageList
+                  messages={mergedMessages}
+                  isStreaming={isStreaming}
+                  variant="page"
+                  emptyDescription="请输入问题，回答完成后会展示引用来源。"
+                  viewportStyle={{ minHeight: 0, height: '100%' }}
+                  showReferences
+                  showUserActions
+                  onReferenceClick={(reference) => {
+                    setActiveReference(reference);
+                    setReferenceOpen(true);
+                  }}
+                  onEditMessage={handleEditMessage}
+                />
+              </div>
+              <div className={styles.inputArea}>
+                {isStreaming ? (
+                  <div className={styles.stopBar}>
+                    <Button
+                      type="default"
+                      shape="round"
+                      icon={stopIcon}
+                      className={styles.stopFloatingButton}
+                      onClick={stopStreaming}
+                    >
+                      停止回答
+                    </Button>
+                  </div>
+                ) : null}
+                <KnowledgeChatComposer
+                  inputRef={inputRef}
+                  value={question}
+                  placeholder="请输入项目执行相关问题"
+                  variant="page"
+                  minRows={4}
+                  maxRows={6}
+                  permission="knowledge:qa:use"
+                  disabled={selectedBaseIds.length === 0}
+                  loading={isStreaming}
+                  editingLabel={editingMessageState ? '修改重发' : undefined}
+                  onChange={setQuestion}
+                  onSubmit={handleSubmitQuestion}
+                  onCancelEdit={editingMessageState ? handleCancelEdit : undefined}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className={`${styles.panel} ${styles.referencePanel}`}>
+          <div className={styles.panelHeader}>
+            <span className={styles.panelTitle}>引用来源</span>
+          </div>
+          <div className={styles.panelBody}>
+            {!lastAssistantMessage?.references?.length ? (
+              <div className={styles.referenceEmpty}>
+                <Typography.Text type="secondary" className={styles.referenceHint}>
+                  {isStreaming ? '回答完成后显示引用来源。' : '暂无引用来源。'}
+                </Typography.Text>
+              </div>
+            ) : (
+              <div className={styles.referenceList}>
+                <List
+                  dataSource={lastAssistantMessage.references}
+                  renderItem={(item) => (
+                    <List.Item
+                      actions={[
+                        <a
+                          key="preview"
+                          onClick={() => {
+                            setActiveReference(item);
+                            setReferenceOpen(true);
+                          }}
+                        >
+                          查看摘录
+                        </a>,
+                      ]}
+                    >
+                      <List.Item.Meta
+                        title={
+                          <Space>
+                            <Typography.Text strong>{item.title}</Typography.Text>
+                            <Tag>{REFERENCE_TYPE_LABELS[item.sourceType]}</Tag>
+                          </Space>
+                        }
+                        description={item.snippet}
+                      />
+                    </List.Item>
+                  )}
+                />
+              </div>
             )}
-          />
-        </ProCard>
-        <ProCard colSpan="50%" title="对话区" loading={messagesLoading} extra={<Space>{isStreaming ? <Button icon={<StopOutlined />} onClick={stopStreaming}>停止生成</Button> : null}{lastUserMessage ? <Button icon={<ReloadOutlined />} onClick={() => runAsk(lastUserMessage.content)}>重新生成</Button> : null}</Space>}>
-          <Space direction="vertical" size={16} style={{ width: '100%' }}>
-            <Select mode="multiple" style={{ width: '100%' }} value={selectedBaseIds} placeholder="选择参与问答的知识库" options={(basePage?.list ?? []).map((item) => ({ label: item.name, value: item.id }))} onChange={setSelectedBaseIds} />
-            <div style={{ minHeight: 360, maxHeight: 520, overflowY: 'auto', paddingRight: 8 }}>
-              {mergedMessages.length === 0 ? <Empty description="先输入一个问题，生成首条问答记录" /> : <List dataSource={mergedMessages} renderItem={(item) => (<List.Item style={{ justifyContent: item.role === 'user' ? 'flex-end' : 'flex-start' }}><div style={{ maxWidth: '80%', padding: 12, borderRadius: 12, background: item.role === 'user' ? '#1677ff' : '#f5f5f5', color: item.role === 'user' ? '#fff' : 'inherit' }}>{item.role === 'assistant' ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.content || (isStreaming ? '生成中...' : '')}</ReactMarkdown> : <Typography.Text style={{ color: '#fff' }}>{item.content}</Typography.Text>}<div style={{ marginTop: 8, fontSize: 12, opacity: 0.72 }}>{item.createdAt}</div></div></List.Item>)} />}
-              <div ref={messageEndRef} />
-            </div>
-            <Input.TextArea rows={4} value={question} placeholder="请输入问题，例如：请总结员工请假审批流程" onChange={(event) => setQuestion(event.target.value)} />
-            <div style={{ textAlign: 'right' }}>
-              <PermissionButton permission="knowledge:qa:use" type="primary" loading={isStreaming} disabled={!question.trim()} onClick={() => runAsk(question)}>
-                {STREAMING_ENABLED ? '流式提问' : '提交问题'}
-              </PermissionButton>
-            </div>
-          </Space>
-        </ProCard>
-        <ProCard colSpan="26%" title="知识引用">
-          {!lastAssistantMessage?.references?.length ? <Empty description={isStreaming ? '答案生成结束后展示引用' : '暂无引用文档'} /> : <List dataSource={lastAssistantMessage.references} renderItem={(item) => (<List.Item actions={[<a key="preview" onClick={() => { setActiveReference(item); setReferenceOpen(true); }}>查看摘录</a>, <a key="jump" onClick={() => history.push(`/knowledge/document?keyword=${encodeURIComponent(item.title)}`)}>跳转文档</a>]}><List.Item.Meta title={<Space><Typography.Text strong>{item.title}</Typography.Text><Tag>{item.sourceType}</Tag></Space>} description={item.snippet} /></List.Item>)} />}
-        </ProCard>
-      </ProCard>
+          </div>
+        </section>
+      </div>
+
       <ModalForm<{ title: string }>
+        key={renameTargetId || 'draft'}
         title="重命名会话"
         open={renameOpen}
-        modalProps={{ destroyOnClose: true, onCancel: () => setRenameOpen(false) }}
-        initialValues={{ title: currentConversation?.title }}
-        onFinish={async (values) => { await renameMutation.mutateAsync(values.title); return true; }}
+        modalProps={{
+          destroyOnClose: true,
+          onCancel: () => setRenameOpen(false),
+        }}
+        initialValues={{ title: renameTargetConversation?.title || currentConversation?.title }}
+        onFinish={async (values) => {
+          await renameMutation.mutateAsync(values.title);
+          return true;
+        }}
       >
-        <ProFormText name="title" label="会话标题" rules={[{ required: true, message: '请输入会话标题' }, { min: 2, max: 30, message: '会话标题长度需在 2 到 30 位之间' }]} />
+        <ProFormText
+          name="title"
+          label="会话标题"
+          rules={[
+            { required: true, message: '请输入会话标题' },
+            { min: 2, max: 30, message: '会话标题长度需要在 2 到 30 个字符之间' },
+          ]}
+        />
       </ModalForm>
-      <Modal title={activeReference?.title} open={referenceOpen} footer={null} onCancel={() => setReferenceOpen(false)}>
-        <Typography.Paragraph>{activeReference?.snippet}</Typography.Paragraph>
-      </Modal>
+
+      <KnowledgeReferencePreviewModal
+        open={referenceOpen}
+        reference={activeReference}
+        onClose={() => setReferenceOpen(false)}
+      />
     </PageContainer>
   );
 }

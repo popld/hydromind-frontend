@@ -60,7 +60,7 @@ export interface KnowledgeAnswer {
 }
 
 export interface AskKnowledgePayload {
-  conversationId: string;
+  conversationId?: string;
   question: string;
   baseIds: string[];
 }

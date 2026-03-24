@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { RunTimeLayoutConfig } from '@umijs/max';
 import { history } from '@umijs/max';
 import { Dropdown } from 'antd';
+import FloatingAiAssistant from '@/components/common/FloatingAiAssistant';
 import { getCurrentUser } from '@/services/api/auth';
 import { useAuthStore } from '@/stores/auth.store';
 import type { InitialState } from '@/types/app';
@@ -37,6 +38,12 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
   return {
     title: '氢枫企业管理 AI 系统',
     layout: 'mix',
+    childrenRender: (dom) => (
+      <>
+        {dom}
+        <FloatingAiAssistant />
+      </>
+    ),
     onPageChange: () => {
       const { location } = history;
       if (!initialState?.currentUser && location.pathname !== LOGIN_PATH) {

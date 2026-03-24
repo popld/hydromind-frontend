@@ -32,6 +32,54 @@ function buildAnswer(question: string) {
   return { content, references };
 }
 
+function ensureConversation(conversationId: string | undefined, question: string) {
+  if (conversationId) {
+    return conversationId;
+  }
+
+  const nextConversationId = `conv-${Date.now()}`;
+  const conversation = {
+    id: nextConversationId,
+    title: question.slice(0, 12) || '新会话',
+    updatedAt: nowText(),
+  };
+
+  conversations.unshift(conversation);
+  conversationMessages[nextConversationId] = [];
+
+  return nextConversationId;
+}
+
+function writeSseEvent(res: any, event: string, data: Record<string, unknown>) {
+  res.write(`event: ${event}\n`);
+  res.write(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+function splitStreamingContent(content: string) {
+  const normalizedContent = content.trim();
+  if (!normalizedContent) {
+    return [''];
+  }
+
+  const chunks: string[] = [];
+  let currentChunk = '';
+
+  for (const char of normalizedContent) {
+    currentChunk += char;
+
+    if (/[，。！？；：,.!?;:]/.test(char) || currentChunk.length >= 2) {
+      chunks.push(currentChunk);
+      currentChunk = '';
+    }
+  }
+
+  if (currentChunk) {
+    chunks.push(currentChunk);
+  }
+
+  return chunks;
+}
+
 function appendMessages(conversationId: string, question: string, answer: string, references: KnowledgeReference[]) {
   const now = nowText();
   const userMessage = {
@@ -194,19 +242,28 @@ export default {
     }
     res.send(buildResponse(conversation));
   },
+  'DELETE /api/v1/knowledge/conversations/:id': (req: any, res: any) => {
+    const index = conversations.findIndex((item) => item.id === req.params.id);
+    if (index >= 0) {
+      conversations.splice(index, 1);
+    }
+    delete conversationMessages[req.params.id];
+    res.send(buildResponse(true));
+  },
   'GET /api/v1/knowledge/conversations/:id/messages': (req: any, res: any) => {
     const list = conversationMessages[req.params.id] || [];
     res.send(buildResponse(list));
   },
   'POST /api/v1/knowledge/qa': (req: any, res: any) => {
     const { conversationId, question, baseIds } = req.body || {};
+    const resolvedConversationId = ensureConversation(conversationId, question);
     const { content, references } = buildAnswer(question);
-    const assistantMessage = appendMessages(conversationId, question, content, references);
+    const assistantMessage = appendMessages(resolvedConversationId, question, content, references);
 
     res.send(
       buildResponse({
         answerId: assistantMessage.id,
-        conversationId,
+        conversationId: resolvedConversationId,
         content,
         references,
         relatedBaseIds: baseIds?.length ? baseIds : knowledgeBases.slice(0, 1).map((item) => item.id),
@@ -215,34 +272,38 @@ export default {
   },
   'POST /api/v1/knowledge/qa/stream': (req: any, res: any) => {
     const { conversationId, question, baseIds } = req.body || {};
+    const resolvedConversationId = ensureConversation(conversationId, question);
     const { content, references } = buildAnswer(question);
-    const chunks = content.match(/.{1,18}/g) || [content];
+    const chunks = splitStreamingContent(content);
     const answerId = `msg-assistant-${Date.now()}`;
 
-    res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
     res.setHeader('Transfer-Encoding', 'chunked');
-    res.write(JSON.stringify({ type: 'start', answerId, conversationId }) + '\n');
+    if (typeof res.flushHeaders === 'function') {
+      res.flushHeaders();
+    }
+    writeSseEvent(res, 'start', { answerId, conversationId: resolvedConversationId });
 
     let index = 0;
     const timer = setInterval(() => {
       if (index < chunks.length) {
-        res.write(JSON.stringify({ type: 'delta', content: chunks[index] }) + '\n');
+        writeSseEvent(res, 'delta', { content: chunks[index] });
         index += 1;
         return;
       }
 
       clearInterval(timer);
-      appendMessages(conversationId, question, content, references);
-      res.write(
-        JSON.stringify({
-          type: 'references',
-          references,
-          relatedBaseIds: baseIds?.length ? baseIds : knowledgeBases.slice(0, 1).map((item) => item.id),
-        }) + '\n',
-      );
-      res.write(JSON.stringify({ type: 'done', answerId, conversationId }) + '\n');
+      appendMessages(resolvedConversationId, question, content, references);
+      writeSseEvent(res, 'references', {
+        references,
+        relatedBaseIds: baseIds?.length ? baseIds : knowledgeBases.slice(0, 1).map((item) => item.id),
+      });
+      writeSseEvent(res, 'done', { answerId, conversationId: resolvedConversationId });
       res.end();
-    }, 120);
+    }, 45);
 
     res.on('close', () => {
       clearInterval(timer);

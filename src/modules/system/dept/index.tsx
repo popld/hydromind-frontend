@@ -2,6 +2,7 @@
 import { useAccess } from '@umijs/max';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, Descriptions, Empty, Input, Popconfirm, Space, Tree, message } from 'antd';
+import type { EventDataNode } from 'antd/es/tree';
 import { ModalForm, PageContainer, ProCard, ProFormSelect, ProFormText } from '@ant-design/pro-components';
 import PermissionButton from '@/components/common/PermissionButton';
 import { queryKeys } from '@/queries/keys';
@@ -25,6 +26,7 @@ export default function SystemDeptPage() {
   const filteredFlat = useMemo(() => flat.filter((item) => !keyword || item.name.includes(keyword)), [flat, keyword]);
   const selected = filteredFlat.find((item) => item.id === selectedId) ?? flat.find((item) => item.id === selectedId);
   const parentOptions = flat.map((item) => ({ label: item.name, value: item.id }));
+  const matchTreeNode = (node: EventDataNode<any>) => !keyword || String(node.title ?? '').includes(keyword);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.system.deptTree });
 
@@ -56,7 +58,7 @@ export default function SystemDeptPage() {
             </Space>
           }
         >
-          {data?.length ? <Tree treeData={data as any} fieldNames={{ title: 'name', key: 'id', children: 'children' }} defaultExpandAll filterTreeNode={(node) => !keyword || String(node.name ?? '').includes(keyword)} onSelect={(keys) => setSelectedId(keys[0] as string)} /> : <Empty description="暂无部门数据" />}
+          {data?.length ? <Tree treeData={data as any} fieldNames={{ title: 'name', key: 'id', children: 'children' }} defaultExpandAll filterTreeNode={matchTreeNode} onSelect={(keys) => setSelectedId(keys[0] as string)} /> : <Empty description="暂无部门数据" />}
         </ProCard>
         <ProCard title="部门详情">
           {selected ? (

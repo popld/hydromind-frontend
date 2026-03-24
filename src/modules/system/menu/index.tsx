@@ -2,6 +2,7 @@
 import { useAccess } from '@umijs/max';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, Descriptions, Empty, Input, Popconfirm, Space, Tree, message } from 'antd';
+import type { EventDataNode } from 'antd/es/tree';
 import { ModalForm, PageContainer, ProCard, ProFormSelect, ProFormText } from '@ant-design/pro-components';
 import PermissionButton from '@/components/common/PermissionButton';
 import { queryKeys } from '@/queries/keys';
@@ -25,6 +26,12 @@ export default function SystemMenuPage() {
   const visibleTree = useMemo(() => data ?? [], [data]);
   const selected = allMenus.find((item) => item.id === selectedId);
   const parentOptions = allMenus.map((item) => ({ label: item.name, value: item.id }));
+  const matchTreeNode = (node: EventDataNode<any>) => {
+    if (!keyword) return false;
+    const title = String(node.title ?? '');
+    const path = String((node as EventDataNode<any> & { path?: string }).path ?? '');
+    return title.includes(keyword) || path.includes(keyword);
+  };
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.system.menuTree });
   const saveMutation = useMutation({ mutationFn: async (values: MenuFormPayload) => editingRecord ? updateMenu(editingRecord.id, values) : createMenu(values), onSuccess: async () => { message.success(editingRecord ? '菜单已更新' : '菜单已创建'); setOpen(false); setEditingRecord(undefined); await refresh(); } });
@@ -34,7 +41,7 @@ export default function SystemMenuPage() {
     <PageContainer title="菜单管理" subTitle="菜单页已支持搜索、按钮权限和路径/权限码校验。">
       <ProCard split="vertical">
         <ProCard colSpan="42%" loading={isLoading} title="菜单树" extra={<Space><Input allowClear placeholder="搜索菜单" value={keyword} onChange={(event) => setKeyword(event.target.value)} style={{ width: 180 }} /><PermissionButton permission="system:menu:create" type="primary" size="small" onClick={() => { setEditingRecord(undefined); setOpen(true); }}>新增菜单</PermissionButton></Space>}>
-          {visibleTree.length ? <Tree treeData={visibleTree as any} fieldNames={{ title: 'name', key: 'id', children: 'children' }} defaultExpandAll filterTreeNode={(node) => !keyword || String(node.name ?? '').includes(keyword) || String(node.path ?? '').includes(keyword)} onSelect={(keys) => setSelectedId(keys[0] as string)} /> : <Empty description="暂无菜单数据" />}
+          {visibleTree.length ? <Tree treeData={visibleTree as any} fieldNames={{ title: 'name', key: 'id', children: 'children' }} defaultExpandAll filterTreeNode={matchTreeNode} onSelect={(keys) => setSelectedId(keys[0] as string)} /> : <Empty description="暂无菜单数据" />}
         </ProCard>
         <ProCard title="菜单详情">
           {selected ? (

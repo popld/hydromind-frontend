@@ -1,0 +1,358 @@
+.page {
+  display: flex;
+  height: calc(100vh - 56px);
+  max-height: calc(100vh - 56px);
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.page :global(.ant-page-header) {
+  flex: none;
+}
+
+.page :global(.ant-pro-page-container-children-container),
+.page :global(.ant-pro-page-container-children-content),
+.page :global(.ant-pro-grid-content),
+.page :global(.ant-pro-grid-content-children) {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.page :global(.ant-pro-page-container-children-container),
+.page :global(.ant-pro-grid-content),
+.page :global(.ant-pro-grid-content-children) {
+  overflow: hidden;
+}
+
+.page :global(.ant-pro-page-container-children-content) {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.page :global(.ant-pro-page-container-children-container) {
+  padding-block: 0;
+}
+
+.board {
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(240px, 272px) minmax(0, 1fr) minmax(280px, 320px);
+  gap: 16px;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.panel {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  border: 1px solid #eef2f8;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
+
+.sessionPanel {
+  min-width: 0;
+}
+
+.chatPanel {
+  min-width: 0;
+}
+
+.referencePanel {
+  min-width: 0;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid #f0f4fa;
+}
+
+.panelTitle {
+  color: #1f2a3d;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.panelExtra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.panelBody {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  padding: 16px 18px 18px;
+  overflow: hidden;
+}
+
+.panelScroll {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.leftAction {
+  margin-bottom: 12px;
+}
+
+.draftConversationCard {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid #dbe7ff;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+  text-align: left;
+  cursor: pointer;
+}
+
+.draftConversationHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.conversationItem {
+  position: relative;
+  cursor: pointer;
+  border-radius: 12px;
+  padding-inline: 12px;
+  transition: background 0.18s ease, box-shadow 0.18s ease;
+}
+
+
+.conversationItem:hover {
+  background: #f8fbff;
+}
+
+.conversationItem:hover .conversationAction,
+.conversationItemActive .conversationAction {
+  opacity: 1;
+}
+
+.conversationItemActive {
+  background: #eaf4ff;
+}
+
+.conversationItemActive::before {
+  background: #2f58ff;
+}
+
+.conversationMeta {
+  padding-left:  12px; 
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.conversationTitle {
+  overflow: hidden;
+  color: #1f2a3d;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversationTime {
+  color: #7c8aa3;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.conversationAction {
+  opacity: 0;
+  color: #6f7d96 !important;
+  transition: opacity 0.18s ease;
+}
+
+.chatBody {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.chatViewport {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.stopBar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.stopFloatingButton {
+  height: 40px;
+  padding-inline: 14px !important;
+  border: 1px solid #d8e0ef !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 12px 28px rgba(31, 42, 61, 0.12);
+  color: #33425c !important;
+}
+
+.stopFloatingButton:hover {
+  border-color: #bfd0f0 !important;
+  background: #f8fbff !important;
+  color: #24344f !important;
+}
+
+.stopGlyph {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #33425c;
+}
+
+.stopGlyphInner {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: #ffffff;
+}
+
+.inputArea {
+  flex: none;
+}
+
+.inputWrap {
+  position: relative;
+  padding: 14px 58px 14px 14px;
+  border: 1px solid #edf1f7;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.input :global(.ant-input) {
+  color: #4e5a6c;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.sendButton {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 34px;
+  height: 34px;
+  border: none !important;
+  background: linear-gradient(180deg, #97b0ff 0%, #7f99ff 100%) !important;
+  box-shadow: none !important;
+}
+
+.sendButton:disabled {
+  background: #d5dceb !important;
+}
+
+.referenceHint {
+  color: #7c8aa3;
+}
+
+.referenceEmpty {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.referenceList {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 1480px) {
+  .board {
+    grid-template-columns: 220px minmax(0, 1fr) 280px;
+  }
+}
+
+@media (max-width: 1280px) {
+  .board {
+    grid-template-columns: 220px minmax(0, 1fr);
+    grid-template-areas:
+      'session chat'
+      'reference chat';
+  }
+
+  .sessionPanel {
+    grid-area: session;
+  }
+
+  .chatPanel {
+    grid-area: chat;
+  }
+
+  .referencePanel {
+    grid-area: reference;
+  }
+}
+
+@media (max-width: 1100px) {
+  .page {
+    height: auto;
+    min-height: calc(100vh - 56px);
+    overflow: visible;
+  }
+
+  .page :global(.ant-pro-page-container-children-container),
+  .page :global(.ant-pro-page-container-children-content),
+  .page :global(.ant-pro-grid-content),
+  .page :global(.ant-pro-grid-content-children) {
+    overflow: visible;
+  }
+
+  .board {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'session'
+      'chat'
+      'reference';
+  }
+
+  .panel {
+    min-height: 320px;
+  }
+}

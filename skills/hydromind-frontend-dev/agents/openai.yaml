@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hydromind Frontend Dev"
+  short_description: "Project constraints and workflows for the hydromind-frontend admin app"
+  default_prompt: "Use this skill when modifying routes, modules, permissions, query hooks, services, auth flow, or mocks in hydromind-frontend."

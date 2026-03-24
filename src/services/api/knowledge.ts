@@ -97,6 +97,13 @@ export async function renameConversation(id: string, title: string) {
   });
 }
 
+export async function deleteConversation(id: string) {
+  return request<boolean>({
+    url: `/v1/knowledge/conversations/${id}`,
+    method: 'DELETE',
+  });
+}
+
 export async function getConversationMessages(conversationId: string) {
   return request<ConversationMessage[]>({
     url: `/v1/knowledge/conversations/${conversationId}/messages`,
@@ -119,10 +126,52 @@ export async function askKnowledgeStream(
     signal?: AbortSignal;
   },
 ) {
+  const emitSseEvent = (rawBlock: string) => {
+    const block = rawBlock.trim();
+    if (!block) {
+      return;
+    }
+
+    let eventName = 'message';
+    const dataLines: string[] = [];
+
+    for (const rawLine of block.split(/\r?\n/)) {
+      const line = rawLine.trimEnd();
+      if (!line || line.startsWith(':')) {
+        continue;
+      }
+
+      const separatorIndex = line.indexOf(':');
+      const field = separatorIndex >= 0 ? line.slice(0, separatorIndex) : line;
+      let value = separatorIndex >= 0 ? line.slice(separatorIndex + 1) : '';
+      if (value.startsWith(' ')) {
+        value = value.slice(1);
+      }
+
+      if (field === 'event') {
+        eventName = value || eventName;
+      }
+      if (field === 'data') {
+        dataLines.push(value);
+      }
+    }
+
+    if (dataLines.length === 0) {
+      return;
+    }
+
+    const payload = JSON.parse(dataLines.join('\n')) as Record<string, unknown>;
+    handlers.onEvent?.({
+      type: eventName,
+      ...payload,
+    } as KnowledgeStreamEvent);
+  };
+
   const response = await fetch(`${process.env.UMI_APP_API_BASE_URL || '/api'}/v1/knowledge/qa/stream`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
     },
     body: JSON.stringify(data),
     signal: handlers.signal,
@@ -139,23 +188,24 @@ export async function askKnowledgeStream(
   while (true) {
     const { done, value } = await reader.read();
     if (done) {
-      break;
+      buffer += decoder.decode();
+    } else {
+      buffer += decoder.decode(value, { stream: true });
     }
 
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() ?? '';
+    const chunks = buffer.split(/\r?\n\r?\n/);
+    buffer = chunks.pop() ?? '';
 
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) {
-        continue;
-      }
-      handlers.onEvent?.(JSON.parse(trimmed) as KnowledgeStreamEvent);
+    for (const chunk of chunks) {
+      emitSseEvent(chunk);
+    }
+
+    if (done) {
+      break;
     }
   }
 
   if (buffer.trim()) {
-    handlers.onEvent?.(JSON.parse(buffer.trim()) as KnowledgeStreamEvent);
+    emitSseEvent(buffer);
   }
 }
