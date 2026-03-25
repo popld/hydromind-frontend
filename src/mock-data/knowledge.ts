@@ -14,8 +14,8 @@ export const knowledgeDocuments: KnowledgeDocumentItem[] = [
 ];
 
 export const conversations: ConversationSummary[] = [
-  { id: 'conv-1', title: '请假审批流程', updatedAt: '2026-03-23 09:15' },
-  { id: 'conv-2', title: '项目复盘模板怎么用', updatedAt: '2026-03-22 17:00' },
+  { id: 'conv-1', title: '员工请假审批流程是什么？', updatedAt: '2026-03-23 09:15' },
+  { id: 'conv-2', title: '项目复盘模板主要包含哪些内容？', updatedAt: '2026-03-22 17:00' },
 ];
 
 export const conversationMessages: Record<string, ConversationMessage[]> = {

@@ -11,6 +11,27 @@ function nowText() {
   return new Date().toISOString().slice(0, 16).replace('T', ' ');
 }
 
+function buildConversationTitle(question: string) {
+  const normalizedQuestion = question.trim().replace(/\s+/g, ' ');
+  if (!normalizedQuestion) {
+    return '新会话';
+  }
+
+  const firstSentence = normalizedQuestion
+    .split(/[。！？!?；;\n\r]/)
+    .map((item) => item.trim())
+    .find(Boolean);
+
+  const titleSource = firstSentence || normalizedQuestion;
+  const maxLength = 20;
+
+  if (titleSource.length <= maxLength) {
+    return titleSource;
+  }
+
+  return `${titleSource.slice(0, maxLength)}...`;
+}
+
 function buildAnswer(question: string) {
   const references: KnowledgeReference[] = [
     {
@@ -40,7 +61,7 @@ function ensureConversation(conversationId: string | undefined, question: string
   const nextConversationId = `conv-${Date.now()}`;
   const conversation = {
     id: nextConversationId,
-    title: question.slice(0, 12) || '新会话',
+    title: buildConversationTitle(question),
     updatedAt: nowText(),
   };
 
@@ -104,7 +125,7 @@ function appendMessages(conversationId: string, question: string, answer: string
   const conversation = conversations.find((item) => item.id === conversationId);
   if (conversation) {
     conversation.updatedAt = now;
-    conversation.title = question.slice(0, 12);
+    conversation.title = buildConversationTitle(question);
   }
 
   return assistantMessage;

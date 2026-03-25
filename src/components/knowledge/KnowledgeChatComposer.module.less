@@ -3,6 +3,18 @@
   flex-direction: column;
 }
 
+.root {
+  --knowledge-primary: #2f6bff;
+  --knowledge-primary-hover: #1f5cfa;
+  --knowledge-primary-soft: #eaf2ff;
+  --knowledge-border: #e6ebf2;
+  --knowledge-border-strong: #d8e2ef;
+  --knowledge-text: #1f2a3d;
+  --knowledge-text-secondary: #66758a;
+  --knowledge-text-placeholder: #98a2b3;
+  --knowledge-shadow-soft: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
 .rootPage {
   flex: none;
 }
@@ -13,14 +25,14 @@
 
 .inputWrap {
   overflow: hidden;
-  border: 1px solid #edf1f7;
+  border: 1px solid var(--knowledge-border);
   border-radius: 18px;
   background: #ffffff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 8px 20px rgba(15, 23, 42, 0.04);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), var(--knowledge-shadow-soft);
 }
 
 .inputWrapEditing {
-  border-color: #e4e9f2;
+  border-color: var(--knowledge-border-strong);
   background: #ffffff;
 }
 
@@ -31,27 +43,27 @@
   gap: 12px;
   min-height: 40px;
   padding: 0 10px 0 12px;
-  border-bottom: 1px solid #edf1f7;
-  background: #f7f8fa;
+  border-bottom: 1px solid var(--knowledge-border);
+  background: #f8fbff;
 }
 
 .editLabel {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #445166;
+  color: var(--knowledge-text-secondary);
   font-size: 13px;
   font-weight: 600;
   line-height: 1.4;
 }
 
 .editIcon {
-  color: #6f7d96;
+  color: var(--knowledge-primary);
   font-size: 13px;
 }
 
 .editClose {
-  color: #6f7d96 !important;
+  color: var(--knowledge-text-secondary) !important;
 }
 
 .inputBody {
@@ -61,9 +73,13 @@
 }
 
 .input :global(.ant-input) {
-  color: #4e5a6c;
+  color: var(--knowledge-text);
   font-size: 14px;
   line-height: 1.6;
+}
+
+.input :global(.ant-input::placeholder) {
+  color: var(--knowledge-text-placeholder);
 }
 
 .sendButton {
@@ -76,14 +92,14 @@
   padding: 0 !important;
   border: none !important;
   border-radius: 999px !important;
-  background: linear-gradient(180deg, #3d7cff 0%, #2563eb 100%) !important;
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.22) !important;
+  background: var(--knowledge-primary) !important;
+  box-shadow: 0 10px 20px rgba(47, 107, 255, 0.2) !important;
 }
 
 .sendButton:hover,
 .sendButton:focus {
-  background: linear-gradient(180deg, #4a86ff 0%, #2f6ef0 100%) !important;
-  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.28) !important;
+  background: var(--knowledge-primary-hover) !important;
+  box-shadow: 0 12px 24px rgba(47, 107, 255, 0.24) !important;
 }
 
 .sendButton:disabled {

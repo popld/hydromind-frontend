@@ -37,7 +37,7 @@ const uiText = {
   alt: '项目执行智能助手',
   panelTitle: '项目执行智能助手',
   hello: '您好',
-  subtitle: '项目执行知识助手',
+  subtitle: '我是项目执行知识助手',
   description: '可查询任务、审批、材料、纪要等项目执行信息。',
   inputPlaceholder: '请输入项目执行相关问题',
   emptyDescription: '从这里开始提问，首轮问答完成后可在知识问答页查看完整会话。',

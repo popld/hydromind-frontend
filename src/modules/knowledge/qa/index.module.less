@@ -1,4 +1,14 @@
 .page {
+  --knowledge-primary: #2f6bff;
+  --knowledge-primary-hover: #1f5cfa;
+  --knowledge-primary-soft: #eaf2ff;
+  --knowledge-page-bg: #f7f9fc;
+  --knowledge-border: #e6ebf2;
+  --knowledge-border-soft: #eef3f8;
+  --knowledge-text: #1f2a3d;
+  --knowledge-text-secondary: #66758a;
+  --knowledge-text-placeholder: #98a2b3;
+  --knowledge-shadow-soft: 0 10px 24px rgba(15, 23, 42, 0.05);
   display: flex;
   height: calc(100vh - 56px);
   max-height: calc(100vh - 56px);
@@ -28,6 +38,7 @@
 }
 
 .page :global(.ant-pro-page-container-children-content) {
+  background: var(--knowledge-page-bg);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
@@ -53,10 +64,10 @@
   min-width: 0;
   min-height: 0;
   flex-direction: column;
-  border: 1px solid #eef2f8;
+  border: 1px solid var(--knowledge-border);
   border-radius: 18px;
   background: #ffffff;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--knowledge-shadow-soft);
   overflow: hidden;
 }
 
@@ -78,11 +89,11 @@
   justify-content: space-between;
   gap: 12px;
   padding: 16px 18px;
-  border-bottom: 1px solid #f0f4fa;
+  border-bottom: 1px solid var(--knowledge-border-soft);
 }
 
 .panelTitle {
-  color: #1f2a3d;
+  color: var(--knowledge-text);
   font-size: 18px;
   font-weight: 700;
   line-height: 1.2;
@@ -123,9 +134,9 @@
   gap: 8px;
   margin-bottom: 12px;
   padding: 12px 14px;
-  border: 1px solid #dbe7ff;
+  border: 1px solid #d7e4ff;
   border-radius: 14px;
-  background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+  background: linear-gradient(180deg, #fafdff 0%, #eef5ff 100%);
   text-align: left;
   cursor: pointer;
 }
@@ -147,7 +158,7 @@
 
 
 .conversationItem:hover {
-  background: #f8fbff;
+  background: #f6f9ff;
 }
 
 .conversationItem:hover .conversationAction,
@@ -156,11 +167,11 @@
 }
 
 .conversationItemActive {
-  background: #eaf4ff;
+  background: var(--knowledge-primary-soft);
 }
 
 .conversationItemActive::before {
-  background: #2f58ff;
+  background: var(--knowledge-primary);
 }
 
 .conversationMeta {
@@ -174,7 +185,7 @@
 
 .conversationTitle {
   overflow: hidden;
-  color: #1f2a3d;
+  color: var(--knowledge-text);
   font-size: 14px;
   font-weight: 600;
   text-overflow: ellipsis;
@@ -182,15 +193,28 @@
 }
 
 .conversationTime {
-  color: #7c8aa3;
+  color: var(--knowledge-text-placeholder);
   font-size: 12px;
   line-height: 1.3;
 }
 
 .conversationAction {
   opacity: 0;
-  color: #6f7d96 !important;
+  color: var(--knowledge-text-secondary) !important;
   transition: opacity 0.18s ease;
+}
+
+.leftAction {
+  margin-bottom: 12px;
+  border: 1px solid var(--knowledge-primary) !important;
+  background: var(--knowledge-primary) !important;
+  box-shadow: 0 10px 20px rgba(47, 107, 255, 0.16);
+}
+
+.leftAction:hover,
+.leftAction:focus {
+  border-color: var(--knowledge-primary-hover) !important;
+  background: var(--knowledge-primary-hover) !important;
 }
 
 .chatBody {
@@ -219,17 +243,17 @@
 .stopFloatingButton {
   height: 40px;
   padding-inline: 14px !important;
-  border: 1px solid #d8e0ef !important;
+  border: 1px solid #d8e2ef !important;
   border-radius: 999px !important;
   background: rgba(255, 255, 255, 0.95) !important;
   box-shadow: 0 12px 28px rgba(31, 42, 61, 0.12);
-  color: #33425c !important;
+  color: var(--knowledge-text-secondary) !important;
 }
 
 .stopFloatingButton:hover {
-  border-color: #bfd0f0 !important;
-  background: #f8fbff !important;
-  color: #24344f !important;
+  border-color: #c8d7f2 !important;
+  background: #f7faff !important;
+  color: var(--knowledge-text) !important;
 }
 
 .stopGlyph {
@@ -239,7 +263,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: #33425c;
+  background: var(--knowledge-text-secondary);
 }
 
 .stopGlyphInner {
@@ -284,7 +308,7 @@
 }
 
 .referenceHint {
-  color: #7c8aa3;
+  color: var(--knowledge-text-placeholder);
 }
 
 .referenceEmpty {
